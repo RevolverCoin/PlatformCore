@@ -94,7 +94,7 @@ routes.post('/support', async (request, response) => {
     }
 })
 /**
- * @api {delete} /support AddSupport
+ * @api {delete} /support DeleteSupport
  * @apiName RemoveSupport
  * @apiGroup Support
  *

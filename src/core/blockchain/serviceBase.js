@@ -96,6 +96,8 @@ class BlockchainServiceBase {
             if (!this.coinbaseAddress)
                 this.coinbaseAddress = address;
 
+
+            console.log("# Blockchain Service: new address ", address);                
             return address;
         } catch (e) {
             console.log(e)
@@ -129,6 +131,8 @@ class BlockchainServiceBase {
     async createNewBlock()
     {
         try {
+            console.log("# Blockchain Service: new block");
+
             // create coinbase tx
             const coinbaseTx = new Transaction(null, this.coinbaseAddress, config.blockReward, TxType.txCoinbase);
             

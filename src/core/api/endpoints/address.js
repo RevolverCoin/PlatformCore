@@ -1,15 +1,91 @@
 const express = require('express')
 
+const errors = require('../errors')
+
 const Address = require('../../../models/address')
 const Support = require('../../../models/support')
+
+const blockchainService = require('./core/blockchain/service');
+
 const routes = express.Router()
 
-const errors = require('../errors')
+
+
+
+
+/**
+ * @api {post} /address/new CreateAddress
+ * @apiName CreateAddress
+ * @apiGroup Address
+ *
+ * @apiHeader {String} content-type application/json
+ *
+ * @apiParam {String} type User type (Supporter, Author, Generator, AuthorGenerator, etc)
+ *
+ * @apiParamExample {json} Request-Example:
+ *  {
+ *      "type": "Author",
+ *  }
+ *
+ *
+ * @apiSuccess {String} errorType type of the error, or noError if no error
+ *
+ * @apiSuccessExample {json} Success-Response:
+ *     HTTP/1.1 200 OK
+ *     {
+ *          "error": "noError",
+ *          "address" : "17wWUwLaE4ACw5wc77RdutVSeJHQp8ti82"
+ *     }
+ *
+ * @apiError noError if call was successful 
+ * @apiError unknownError if error occurred during API call
+ * @apiError invalidInputs bad address or type provided
+ *
+ */
+
+routes.post('/address/new', async (request, response) => {
+    const responseData = {
+        error: errors.unknownError,
+    }
+
+    try {
+        const requestData = ({ type } = request.body)
+
+        // validate
+        const valid = true
+        if (!valid) {
+            responseData.error = errors.invalidInputs
+            response.json(responseData)
+            return
+        }
+
+
+        // generate address
+        const newAddress = await blockchainService.generateNewAddress();
+
+        const data = Object.assign({address:newAddress}, requestData);
+
+        // add address
+        const result = await Address.create(data)
+        if (result) {
+            responseData.error = errors.noError
+            responseData.address = newAddress
+        }
+
+        response.json(responseData)
+    } catch (e) {
+        responseData.message = e.toString()
+        response.json(responseData)
+    }
+})
+
 
 /**
  * @api {post} /address AddAddress
+ * @apiDeprecated use now (#Address:CreateAddress)
  * @apiName AddAddress
  * @apiGroup Address
+ 
  *
  * @apiHeader {String} content-type application/json
  *

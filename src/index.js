@@ -8,12 +8,15 @@ const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 
+const blockchainService = require('./core/blockchain/service');
+
 const {
   MONGO_URL,
   PORT
 } = require('./config');
 
 mongoose.connect(MONGO_URL);
+
 
 const whitelist = ['http://localhost']
 var corsOptions = {
@@ -40,6 +43,10 @@ app.use(bodyParser.urlencoded({
 
 // routes ======================================================================
 require('./core/api/index')(app); // load our routes
+
+
+// launch service 
+blockchainService.startDaemon();
 
 // launch ======================================================================
 app.listen(PORT);
