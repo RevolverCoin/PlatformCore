@@ -5,11 +5,9 @@ const errors = require('../errors')
 const Address = require('../../../models/address')
 const Support = require('../../../models/support')
 
-const blockchainService = require('./core/blockchain/service');
+const blockchainService = require('../../blockchain/service');
 
 const routes = express.Router()
-
-
 
 
 

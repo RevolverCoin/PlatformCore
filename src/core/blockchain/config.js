@@ -1,6 +1,6 @@
 const Config = {
-    // block time in seconds
-    blockTime: 60,
+    // block time in miliseconds
+    blockTime: 60 * 1000,
 
     // reward
     blockReward: 2

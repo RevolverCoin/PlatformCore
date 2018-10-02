@@ -1,4 +1,4 @@
-const {Service} = require('./serviceMemory')
+const Service = require('./serviceMemory')
 
 const service = new Service();
 service.generateNewAddress();
