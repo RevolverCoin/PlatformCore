@@ -7,33 +7,29 @@ const Config = require('../src/config')
 const assert = require('assert');
 
 
-
 describe('Blockchain Database Test', () => {
     
-    before( (done) => {
-        mongoose.connect(Config.MONGO_TEST_URL, { useNewUrlParser: true });
-        mongoose.connection.on('error', console.error.bind(console, 'connection error'));
-        mongoose.connection.on('open', () => {
+    before( done => {
+        if (mongoose.connection.db) return done();
+        mongoose.connect(Config.MONGO_TEST_URL, { useNewUrlParser: true }, done)
+    })
 
-            // do not drop right after connection created
-            setTimeout(()=>{
-                mongoose.connection.db.dropDatabase( () => {
-                    this.service = new ServiceDatabase();
-                    this.service.generateNewAddress().then(()=>{ done() });
-                });
-            }, 100);
+    after(done => {
+        mongoose.connection.close(done);
+    })
 
+    beforeEach((done) => {
+        mongoose.connection.db.dropDatabase( async () => {
+
+            this.service = new ServiceDatabase();
+            await this.service.generateNewAddress();
+
+            done();
         });
+    });    
 
-    });
 
-    after( (done) => {
-        mongoose.connection.db.dropDatabase( () => {
-            mongoose.connection.close(done);
-        });
-    });
-
-    it('Create a bunch of block', async () => {
+    it('Create a bunch of blocks', async () => {
 
         const count = 10;
 
@@ -49,4 +45,7 @@ describe('Blockchain Database Test', () => {
         assert (statesCount === 1)
     });
 
+    // it('Create a bunch of block 2', async () => {
+    //     await this.service.createNewBlock();
+    // });
 });

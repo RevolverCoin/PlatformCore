@@ -5,7 +5,7 @@ const assert = require('assert');
 
 describe('Memory blockchain test', async () => {
 
-    before(async () => {
+    beforeEach(async () => {
         this.service = new ServiceMemory();
         await this.service.generateNewAddress();
 
@@ -34,4 +34,11 @@ describe('Memory blockchain test', async () => {
         const statesCount = await this.service.getStatesCount();
         assert (statesCount === 1)
     });
+
+    it('test coinbase transactions', async () => {
+        await this.service.createNewBlock();
+        assert(this.service.ledger.length === 1)
+        assert(this.service.ledger[0].txs.length === 1);
+    });
+
 });

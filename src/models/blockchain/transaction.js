@@ -5,7 +5,7 @@ let transactionSchema = mongoose.Schema({
     addressTo       : String,
     amount          : Number,
     type            : String,       
-    id              : String
+    id              : { type:String, unique : true, required : true},
 });
 
 module.exports = {

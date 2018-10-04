@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon src/index.js",
-    "test": "mocha",
+    "test": "mocha --timeout 15000",
+    "testdb": "mocha ./test/serviceDatabase.test.js --timeout 15000",
     "apidoc": "apidoc -i src/ -o doc/generated -t doc/template"
   },
   "apidoc": {

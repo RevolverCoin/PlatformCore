@@ -25,6 +25,7 @@ class Transaction {
 
         // calculate id
         this.id             = bs58check.encode(bitcoin.crypto.sha256(new Buffer(JSON.stringify(copy))))
+
     }
 
 }
@@ -70,8 +71,6 @@ class BlockchainServiceBase {
     
     async registerNewBlock(block)               { throw new Error('not implemented'); }
                       
-
-
     async generateNewAddress() {
         try {
 

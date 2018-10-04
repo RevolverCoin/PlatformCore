@@ -313,7 +313,7 @@ routes.get('/address/supporting/:address', async (request, response) => {
 })
 
 /**
- * @api {get} /address/supporting/:address GetSupporters
+ * @api {get} /address/supported/:address GetSupporters
  * @apiName GetSupporters
  * @apiGroup Address
  *
