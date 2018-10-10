@@ -372,4 +372,53 @@ routes.get('/address/supported/:address', async (request, response) => {
 
 })
 
+/**
+ * @api {get} /addresses GetAddresses
+ * @apiName GetAddresses
+ * @apiGroup Address
+ *
+ *
+ * @apiSuccess {String} errorType type of the error, or noError if no error
+ * @apiSuccess {String} data resulting data, containing all addresses
+ *
+ * @apiSuccessExample {json} Success-Response:
+ *     HTTP/1.1 200 OK
+ *     {
+ *          "error": "noError",
+ *          "data": [
+ *                  ...
+ *              ]
+ *          }
+ *     }
+ *
+ * @apiError noError if call was successful 
+ * @apiError unknownError if error occurred during API call
+ *
+ */
+routes.get('/addresses', async (request, response) => {
+    const responseData = {
+        error: errors.unknownError,
+        data: {}
+    }
+
+    try {
+        const result = await Address.find()
+        const preparedResult = result.map(obj => {
+            return {
+                address: obj._doc.address,
+                type: obj._doc.type
+            } 
+        })
+
+        responseData.error  = errors.noError
+        responseData.data   = preparedResult
+        response.json(responseData)
+    } catch (e) {
+        responseData.message = e.toString()
+        response.json(responseData)
+    }
+
+})
+
+
 module.exports = routes

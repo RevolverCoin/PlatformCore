@@ -28,7 +28,7 @@ describe('Blockchain Database Test', () => {
         });
     });    
 
-
+ 
     it('Create a bunch of blocks', async () => {
 
         const count = 10;
@@ -45,7 +45,45 @@ describe('Blockchain Database Test', () => {
         assert (statesCount === 1)
     });
 
-    // it('Create a bunch of block 2', async () => {
-    //     await this.service.createNewBlock();
-    // });
+    it('Test sending', async () => {
+        const address1 = this.service.coinbaseAddress;
+
+        // create second address
+        const address2 = await this.service.generateNewAddress();
+        
+        await this.service.createNewBlock();
+
+        let state1 = await this.service.getState(address1); 
+        assert(state1.balance === ServiceConfig.blockReward)
+
+        await this.service.send(address1, address2, ServiceConfig.blockReward / 2)
+        
+        // check it is not in state until new block
+        state1 = await this.service.getState(address1); 
+        assert(state1.balance === ServiceConfig.blockReward)
+
+        await this.service.createNewBlock();
+
+        state1 = await this.service.getState(address1); 
+        assert(state1.balance === ServiceConfig.blockReward * 3 / 2)
+        
+        let state2 = await this.service.getState(address2); 
+        assert(state2.balance === ServiceConfig.blockReward / 2)
+
+        // create second address
+        const address3 = await this.service.generateNewAddress();
+
+        await this.service.send(address1, address3, ServiceConfig.blockReward / 2)
+        await this.service.createNewBlock();
+
+        state1 = await this.service.getState(address1); 
+        assert(state1.balance === ServiceConfig.blockReward * 2)
+        
+        state2 = await this.service.getState(address2); 
+        assert(state2.balance === ServiceConfig.blockReward / 2)
+
+        let state3 = await this.service.getState(address3); 
+        assert(state3.balance === ServiceConfig.blockReward / 2)
+
+    });
 });

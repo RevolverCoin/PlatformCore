@@ -26,10 +26,13 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
   async updateState(address, newBalance, tx) {
     const txData = Object.assign({}, tx)
 
+    // create tx in db 
     const txResult = await TransactionSchema.findOneAndUpdate({ id: tx.id }, txData, {
       upsert: true,
       new: true,
     })
+
+    // update state and add tx ref
     await StateSchema.update(
       { address },
       { balance: newBalance, $push: { transactions: txResult._id } },
@@ -59,7 +62,7 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
     const pending = await PendingTransactionSchema.find({})
 
     const result = pending.map(value => {
-      return new Transaction(value.addressFrom, value.addressTo, value.amount, value.type)
+      return new Transaction(value.addressFrom, value.addressTo, value.amount, value.type, value.id)
     })
 
     return result
@@ -79,7 +82,7 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
         transactions: objectIds,
       })
       await blockSchema.save()
-
+      
       // remove all handled pending txs
       await PendingTransactionSchema.deleteMany({ id: { $in: txIdsInBlock } })
     } catch (e) {

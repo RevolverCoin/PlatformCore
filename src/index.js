@@ -15,7 +15,7 @@ const {
   PORT
 } = require('./config');
 
-mongoose.connect(MONGO_URL);
+mongoose.connect(MONGO_URL, { useNewUrlParser: true });
 
 
 const whitelist = ['http://localhost']
@@ -33,7 +33,7 @@ var corsOptions = {
   }
 }
 
-//app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 app.use(morgan('dev')); // log every request to the console
 app.use(bodyParser.json()); // get information from html forms
 app.use(bodyParser.urlencoded({

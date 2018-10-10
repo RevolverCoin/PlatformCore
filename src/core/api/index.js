@@ -1,6 +1,8 @@
 
 const addressRoutes = require('../api/endpoints/address')
 const supportRoutes = require('../api/endpoints/support')
+const blockchainRoutes = require('../api/endpoints/blockchain')
+
 const {
   createSuccessResponse
 } = require('../utils/utils')
@@ -13,4 +15,5 @@ module.exports = function (app) {
     .get('/die', () => process.exit(0))
     .use(addressRoutes)
     .use(supportRoutes)
+    .use(blockchainRoutes)
 }
