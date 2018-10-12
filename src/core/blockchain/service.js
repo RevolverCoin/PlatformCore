@@ -1,6 +1,6 @@
 const Service = require('./serviceDatabase')
 
 const service = new Service();
-service.generateNewAddress();
+service.init();
 
 module.exports = service;

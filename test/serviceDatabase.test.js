@@ -22,7 +22,7 @@ describe('Blockchain Database Test', () => {
         mongoose.connection.db.dropDatabase( async () => {
 
             this.service = new ServiceDatabase();
-            await this.service.generateNewAddress();
+            await this.service.init();
 
             done();
         });
@@ -37,7 +37,8 @@ describe('Blockchain Database Test', () => {
             return acc.then( () => this.service.createNewBlock()) 
         }, Promise.resolve())
 
-        const state = await this.service.getState(this.service.coinbaseAddress); 
+        const serviceAddress = await this.service.getServiceAddress(); 
+        const state = await this.service.getState(serviceAddress); 
 
         assert(state.balance === count * ServiceConfig.blockReward)
 
@@ -46,7 +47,9 @@ describe('Blockchain Database Test', () => {
     });
 
     it('Test sending', async () => {
-        const address1 = this.service.coinbaseAddress;
+        const serviceAddress = await this.service.getServiceAddress(); 
+
+        const address1 = serviceAddress;
 
         // create second address
         const address2 = await this.service.generateNewAddress();

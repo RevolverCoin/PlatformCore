@@ -81,6 +81,20 @@ class BlockchainServiceBase {
   async getServiceAddress() {
     return this.coinbaseAddress
   }
+  
+  async setServiceAddress(address) {
+    this.coinbaseAddress = address
+  }
+
+
+  async init() {
+    this.coinbaseAddress = await this.getServiceAddress()
+    if (!this.coinbaseAddress) {
+      const address = await this.generateNewAddress()
+      await this.setServiceAddress(address)
+      this.coinbaseAddress = address;
+    }
+  }
 
   async generateNewAddress() {
     try {
@@ -91,7 +105,6 @@ class BlockchainServiceBase {
 
       const root = bitcoin.bip32.fromBase58(xpub, network)
 
-      //
       const statesCount = await this.getStatesCount()
 
       const path = statesCount.toString()
@@ -102,9 +115,6 @@ class BlockchainServiceBase {
       // register in state
       await this.createState(address)
 
-      // the first address is a coinbase address
-      if (!this.coinbaseAddress) this.coinbaseAddress = address
-
       console.log('# Blockchain Service: new address ', address)
       return address
     } catch (e) {
@@ -114,6 +124,7 @@ class BlockchainServiceBase {
   }
 
   async send(addressFrom, addressTo, amount) {
+
     // verify from address - address should exist
     const stateFrom = await this.getState(addressFrom)
     if (!stateFrom) return false
@@ -135,6 +146,8 @@ class BlockchainServiceBase {
   async createNewBlock() {
     try {
       console.log('# Blockchain Service: new block')
+
+      if (!this.coinbaseAddress) throw new Error('Service address error!')
 
       // create coinbase tx
       const coinbaseTx = new Transaction(
@@ -209,7 +222,7 @@ class BlockchainServiceBase {
     }
   }
 
-  startDaemon() {
+  async startDaemon() {
     if (this.miner) return
 
     this.miner = setInterval(() => {
@@ -217,7 +230,7 @@ class BlockchainServiceBase {
     }, config.blockTime)
   }
 
-  stopDaemon() {
+  async stopDaemon() {
     if (this.miner) clearInterval(this.miner)
 
     this.miner = null

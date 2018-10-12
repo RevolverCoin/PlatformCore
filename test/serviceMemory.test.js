@@ -7,7 +7,7 @@ describe('Memory blockchain test', async () => {
 
     beforeEach(async () => {
         this.service = new ServiceMemory();
-        await this.service.generateNewAddress();
+        await this.service.init();
 
     });
 

@@ -15,8 +15,11 @@ routes.get('/blockchain/info', async (request, response) => {
 
   try {
     const height = await blockchainService.getHeight()
+    const serviceAddress = await blockchainService.getServiceAddress()
+    const state = await blockchainService.getState(serviceAddress)
 
-    responseData.data = {height}
+
+    responseData.data = {height, serviceAddress, serviceBalance:state.balance }
     responseData.error = errors.noError
 
     response.json(responseData)
@@ -80,9 +83,9 @@ routes.post('/blockchain/send', async (request, response) => {
   }
 
   try {
-    const requestData = ({ fromAddress, toAddress, amount } = request.body)
-
-    await blockchainService.send(requestData.fromAddress, requestData.toAddress, requestData.amount)
+    const requestData = ({ addressFrom, addressTo, amount } = request.body)
+   
+    await blockchainService.send(requestData.addressFrom, requestData.addressTo, parseInt(requestData.amount))
 
     responseData.error = errors.noError
     response.json(responseData)

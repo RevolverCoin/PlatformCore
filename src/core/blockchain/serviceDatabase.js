@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const BlockSchema = require('../../models/blockchain/block')
 const StateSchema = require('../../models/blockchain/state')
+const ServiceSchema = require('../../models/blockchain/service')
 const {
   Transaction: TransactionSchema,
   PendingTransaction: PendingTransactionSchema,
@@ -53,6 +54,20 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
   async getHeight() {
     return BlockSchema.countDocuments({})
   }
+
+  async getServiceAddress() {
+    const serviceInfo = await ServiceSchema.findOne();
+    if (!serviceInfo)
+      return null;
+    
+    return serviceInfo.address;
+  }
+  
+  async setServiceAddress(address) {
+    await ServiceSchema.create({address});
+  }
+
+
 
   async addPendingTx(tx) {
     const pendingTxSchema = new PendingTransactionSchema(tx)
