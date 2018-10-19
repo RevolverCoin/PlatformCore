@@ -29,6 +29,7 @@
     "express": "^4.16.3",
     "mongoose": "^5.1.4",
     "morgan": "^1.9.0",
+    "reward-core": "git+https://github.com/RevolverCoin/RewardCore.git",
     "uuid": "^3.3.2"
   }
 }
