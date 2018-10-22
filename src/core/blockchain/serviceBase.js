@@ -63,6 +63,10 @@ class BlockchainServiceBase {
     throw new Error('not implemented')
   }
 
+  /**
+   * Height is a count of registered blocks
+   * In terms of block index - it points to the index of upcoming block
+   */
   async getHeight() {
     throw new Error('not implemented')
   }

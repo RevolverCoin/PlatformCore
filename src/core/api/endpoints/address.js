@@ -47,7 +47,8 @@ routes.post('/address/new', async (request, response) => {
     }
 
     try {
-        const requestData = ({ type } = request.body)
+        const { type } = request.body
+        const requestData = {type}
 
         // validate
         const valid = true
@@ -118,7 +119,8 @@ routes.post('/address', async (request, response) => {
     }
 
     try {
-        const requestData = ({ address, type } = request.body)
+        const { address, type } = request.body
+        const requestData = { address, type }
 
         // verify if support does not exists
         const documents = await Address.find({ address: requestData.address })
@@ -193,8 +195,8 @@ routes.patch('/address/:address', async (request, response) => {
             response.json(responseData)
             return
         }
-
-        const requestData = ({ type } = request.body)
+        const { type } = request.body
+        const requestData = {type}
 
         const result = await Address.findOneAndUpdate({ address }, { type: requestData.type })
         if (result) {

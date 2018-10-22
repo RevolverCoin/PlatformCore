@@ -44,9 +44,10 @@ routes.post('/support', async (request, response) => {
     const responseData = {
         error: errors.unknownError,
     }
-
     try {
-        const requestData = ({ addressFrom, addressTo } = request.body)
+
+        const { addressFrom, addressTo} = request.body
+        const requestData = {addressFrom, addressTo}
 
         // verify if support does not exists
         let documents = await Support.find(requestData)
@@ -63,10 +64,9 @@ routes.post('/support', async (request, response) => {
             response.json(responseData)
             return
         }
-
         // check if addressTo is exists
-        documents = await Address.find({address:requestData.addressTo})
-        if (!documents || documents.length <= 0) {
+        const addressToDocument = await Address.find({address:requestData.addressTo})
+        if (!addressToDocument || addressToDocument.length <= 0) {
             responseData.error = errors.addressToNotFound
             response.json(responseData)
             return
@@ -79,16 +79,17 @@ routes.post('/support', async (request, response) => {
             response.json(responseData)
             return
         }
-
+        
         // add support
         const result = await Support.create(requestData)
         if (result) {
             responseData.error = errors.noError
         }
-
+        
 
         response.json(responseData)
     } catch (e) {
+        console.log(e)
         responseData.message = e.toString()
         response.json(responseData)
     }
@@ -129,11 +130,12 @@ routes.delete('/support', async (request, response) => {
     }
 
     try {
-        const requestData = ({ addressFrom, addressTo } = request.body)
+        const { addressFrom, addressTo} = request.body
+        const requestData = {addressFrom, addressTo}
 
         // verify if support does not exists
         let documents = await Support.findOneAndRemove(requestData)
-        console.log(documents)
+
         if (!documents || documents.length <= 0) {
             responseData.error = errors.supportNotFound
         } else {

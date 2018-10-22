@@ -3,7 +3,7 @@ const express = require('express')
 const errors = require('../errors')
 
 const State = require('../../../models/blockchain/state')
-const {Transaction} = require('../../../models/blockchain/transaction')
+const { Transaction } = require('../../../models/blockchain/transaction')
 
 const blockchainService = require('../../blockchain/service')
 
@@ -15,7 +15,7 @@ const routes = express.Router()
  * @apiGroup Blockchain
  *
  * @apiHeader {String} content-type application/json
- * 
+ *
  * @apiSuccess {String} errorType type of the error, or noError if no error
  * @apiSuccess {String} data resulting data, containing info
  *
@@ -24,15 +24,15 @@ const routes = express.Router()
  *     {
  *          "error": "noError",
  *          "data": {
- *              height: 325,  
+ *              height: 325,
  *              serviceAddress: '13mNf2rNDcVMhNZehRpKJbyLLc3ftpsy3z',
  *              serviceBalance: 740
  *  *          }
  *     }
  *
- * @apiError noError if call was successful 
+ * @apiError noError if call was successful
  * @apiError unknownError if error occurred during API call
- * 
+ *
  */
 routes.get('/blockchain/info', async (request, response) => {
   const responseData = {
@@ -44,8 +44,7 @@ routes.get('/blockchain/info', async (request, response) => {
     const serviceAddress = await blockchainService.getServiceAddress()
     const state = await blockchainService.getState(serviceAddress)
 
-
-    responseData.data = {height, serviceAddress, serviceBalance:state.balance }
+    responseData.data = { height, serviceAddress, serviceBalance: state.balance }
     responseData.error = errors.noError
 
     response.json(responseData)
@@ -55,14 +54,13 @@ routes.get('/blockchain/info', async (request, response) => {
   }
 })
 
-
 /**
  * @api {get} /blockchain/state GetBlockchainState
  * @apiName GetBlockchainState
  * @apiGroup Blockchain
  *
  * @apiHeader {String} content-type application/json
- * 
+ *
  * @apiSuccess {String} errorType type of the error, or noError if no error
  * @apiSuccess {String} data resulting data, containing info
  *
@@ -73,18 +71,20 @@ routes.get('/blockchain/info', async (request, response) => {
  *          "data": [
  *             {
  *              address: '13mNf2rNDcVMhNZehRpKJbyLLc3ftpsy3z',
- *              balance: 740
+ *              balance: 740,
+ *              type: 'undefined'
  *             },
  *             {
  *              address: '13mNf2rNDcVMhNZehRpKJbyLLc3ftpsy3z',
- *              balance: 740
+ *              balance: 740,
+ *              type: 'Supporter'
  *             }
  *          ]
  *     }
  *
- * @apiError noError if call was successful 
+ * @apiError noError if call was successful
  * @apiError unknownError if error occurred during API call
- * 
+ *
  */
 routes.get('/blockchain/state', async (request, response) => {
   const responseData = {
@@ -92,15 +92,55 @@ routes.get('/blockchain/state', async (request, response) => {
   }
 
   try {
-    const states = await State.find()
+    const states = await State.aggregate([
+      {
+        $lookup: {
+          from: 'addresses',
+          localField: 'address',
+          foreignField: 'address',
+          as: 'addressExtended',
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: { $mergeObjects: [{ $arrayElemAt: ['$addressExtended', 0] }, '$$ROOT'] },
+        },
+      },
+      {
+        $lookup: {
+          from: 'supports',
+          localField: 'address',
+          foreignField: 'addressFrom',
+          as: 'sing',
+        },
+      },
+      {
+        $lookup: {
+          from: 'supports',
+          localField: 'address',
+          foreignField: 'addressTo',
+          as: 'sed',
+        },
+      },
 
-    const result = states.map(state => ({ address: state.address, balance: state.balance }))
+      {
+        $project: {
+          _id: 0,
+          address: 1,
+          balance: 1,
+          type: 1,
+          sing: { $size: '$sing' },
+          sed: { $size: '$sed' },
+        },
+      },
+    ])
 
-    responseData.data = result
+    responseData.data = states
     responseData.error = errors.noError
 
     response.json(responseData)
   } catch (e) {
+    console.log(e)
     responseData.message = e.toString()
     response.json(responseData)
   }
@@ -112,9 +152,9 @@ routes.get('/blockchain/state', async (request, response) => {
  * @apiGroup Blockchain
  *
  * @apiHeader {String} content-type application/json
- * 
+ *
  * @apiParam (url){String} address User address
- * 
+ *
  * @apiSuccess {String} errorType type of the error, or noError if no error
  * @apiSuccess {String} data resulting data, containing info
  *
@@ -125,10 +165,10 @@ routes.get('/blockchain/state', async (request, response) => {
  *          "data": 740
  *     }
  *
- * @apiError noError if call was successful 
+ * @apiError noError if call was successful
  * @apiError unknownError if error occurred during API call
  * @apiError invalidInputs bad address provided
- * 
+ *
  */
 routes.get('/blockchain/:address/balance', async (request, response) => {
   const responseData = {
@@ -158,16 +198,15 @@ routes.get('/blockchain/:address/balance', async (request, response) => {
   }
 })
 
-
 /**
  * @api {get} /blockchain/:address/transactions GetBlockchainTransactions
  * @apiName GetBlockchainTransactions
  * @apiGroup Blockchain
  *
  * @apiHeader {String} content-type application/json
- * 
+ *
  * @apiParam (url){String} address User address
- * 
+ *
  * @apiSuccess {String} errorType type of the error, or noError if no error
  * @apiSuccess {String} data resulting data, containing info
  *
@@ -180,10 +219,10 @@ routes.get('/blockchain/:address/balance', async (request, response) => {
  *          ]
  *     }
  *
- * @apiError noError if call was successful 
+ * @apiError noError if call was successful
  * @apiError unknownError if error occurred during API call
  * @apiError invalidInputs bad address provided
- * 
+ *
  */
 routes.get('/blockchain/:address/transactions', async (request, response) => {
   const responseData = {
@@ -202,9 +241,9 @@ routes.get('/blockchain/:address/transactions', async (request, response) => {
     }
 
     const result = await Transaction.find(
-      {$or: [{addressFrom: address}, {addressTo: address}] }, 
-      null, 
-      { limit: 100,  sort:{ blockHeight: -1}}
+      { $or: [{ addressFrom: address }, { addressTo: address }] },
+      null,
+      { limit: 100, sort: { blockHeight: -1 } },
     )
 
     responseData.data = result
@@ -216,7 +255,6 @@ routes.get('/blockchain/:address/transactions', async (request, response) => {
     response.json(responseData)
   }
 })
-
 
 /**
  * @api {post} /blockchain/send Send
@@ -257,8 +295,10 @@ routes.post('/blockchain/send', async (request, response) => {
   }
 
   try {
-    const requestData = ({ addressFrom, addressTo, amount } = request.body)
-   
+
+    const { addressFrom, addressTo, amount } = request.body
+    const requestData = {addressFrom, addressTo, amount}
+
     // validate
     const valid = true
     if (!valid) {
@@ -267,7 +307,11 @@ routes.post('/blockchain/send', async (request, response) => {
       return
     }
 
-    await blockchainService.send(requestData.addressFrom, requestData.addressTo, parseInt(requestData.amount))
+    await blockchainService.send(
+      requestData.addressFrom,
+      requestData.addressTo,
+      parseInt(requestData.amount),
+    )
 
     responseData.error = errors.noError
     response.json(responseData)
