@@ -100,6 +100,9 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
       
       // remove all handled pending txs
       await PendingTransactionSchema.deleteMany({ id: { $in: txIdsInBlock } })
+
+      // update blockHeight for txs
+      await TransactionSchema.updateMany({ id: { $in: txIdsInBlock } }, { $set: { "blockHeight" : block.height } })
     } catch (e) {
       console.log(e)
     }

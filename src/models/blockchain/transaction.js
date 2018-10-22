@@ -4,8 +4,9 @@ let transactionSchema = mongoose.Schema({
     addressFrom     : String,
     addressTo       : String,
     amount          : Number,
-    type            : String,       
+    type            : String,
     id              : { type:String, unique : true, required : true},
+    blockHeight     : Number,
 });
 
 module.exports = {

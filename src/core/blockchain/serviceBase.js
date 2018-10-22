@@ -145,7 +145,7 @@ class BlockchainServiceBase {
 
   async createNewBlock() {
     try {
-      console.log('# Blockchain Service: new block')
+      
 
       if (!this.coinbaseAddress) throw new Error('Service address error!')
 
@@ -175,6 +175,8 @@ class BlockchainServiceBase {
       await block.txs.reduce((p, tx) => {
         return p.then(() => this.executeTx(tx))
       }, Promise.resolve())
+
+      console.log('# Blockchain Service: new block #' + height)
 
       await this.registerNewBlock(block)
     } catch (e) {
