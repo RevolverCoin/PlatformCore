@@ -92,6 +92,7 @@ routes.get('/blockchain/state', async (request, response) => {
   }
 
   try {
+
     const states = await State.aggregate([
       {
         $lookup: {

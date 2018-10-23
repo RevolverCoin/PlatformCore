@@ -1,9 +1,12 @@
 const Config = {
     // block time in miliseconds
-    blockTime: 60 * 1000,
+    blockTime: 20 * 1000,
 
-    // reward
-    blockReward: 2
+    // mining reward
+    blockReward: 1,
+
+    // distribution reward
+    distributeReward: 1
 }
 
 module.exports = Config;

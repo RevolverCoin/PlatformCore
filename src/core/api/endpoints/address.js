@@ -10,7 +10,6 @@ const blockchainService = require('../../blockchain/service');
 const routes = express.Router()
 
 
-
 /**
  * @api {post} /address/new CreateAddress
  * @apiName CreateAddress

@@ -3,9 +3,12 @@ const bs58check = require('bs58check')
 const uuidv4 = require('uuid/v4')
 const config = require('./config')
 
+const rewardSystem = require('../reward/reward')
+
 const TxType = {
   txCoinbase: 'txCoinbase',
   txNormal: 'txNormal',
+  txReward: 'txReward' 
 }
 
 class Transaction {
@@ -29,9 +32,10 @@ class Transaction {
 }
 
 class Block {
-  constructor(coinbaseTx, height) {
+  constructor(coinbaseTx, rewardTxs, height) {
     this.txs = []
-    this.txs.push(coinbaseTx)
+    this.txs.push   (coinbaseTx)
+    this.txs = this.txs.concat (rewardTxs)
 
     this.height = height
   }
@@ -163,8 +167,24 @@ class BlockchainServiceBase {
 
       const height = await this.getHeight()
 
+      // generate rewards
+      const rewardsResult = await rewardSystem.processRewards(config.distributeReward);
+
+      // create rewardTxs
+      const rewardTxs = rewardsResult.rewards.map(item => {
+        return new Transaction(
+          null,
+          item.address,
+          item.reward,
+          TxType.txReward,
+        )
+      })
+
+      console.log(rewardTxs)
       // create block
-      const block = new Block(coinbaseTx, height)
+      const block = new Block(coinbaseTx, rewardTxs, height)
+
+      console.log(block)
 
       const pendingTxs = await this.getPendingTxs()
 
