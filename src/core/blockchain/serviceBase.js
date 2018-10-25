@@ -180,11 +180,9 @@ class BlockchainServiceBase {
         )
       })
 
-      console.log(rewardTxs)
+      
       // create block
       const block = new Block(coinbaseTx, rewardTxs, height)
-
-      console.log(block)
 
       const pendingTxs = await this.getPendingTxs()
 

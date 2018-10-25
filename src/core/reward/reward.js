@@ -1,7 +1,8 @@
-const { Map, fromJS } = require('immutable')
+const { Map, Set, List, fromJS } = require('immutable')
 
 const NodeType = require('reward-core/NodeType')
-const { createGetNodeFeeFunc, distributeReward } = require('reward-core')
+const { distributeReward } = require('reward-core')
+const { createAdjacencyMatrix, isSet } = require('reward-core/utils')
 
 const Address = require('../../models/address')
 const Support = require('../../models/support')
@@ -14,6 +15,14 @@ function convertType(type) {
   if (type === 'Generator') return NodeType.GENERATOR
   if (type === 'Author') return NodeType.AUTHOR
   if (type === 'Supporter') return NodeType.SUPPORTER
+}
+
+/**
+ * createGetNodeFeeFunc 
+ */
+function createGetNodeFeeFunc(edges, supporterFee, authorFee) {
+  const matrix = createAdjacencyMatrix(edges)
+  return (nodeId, parentId) => (isSet(matrix, parentId, nodeId) ? authorFee : supporterFee)
 }
 
 async function processRewards(rewardAmount) {
@@ -51,17 +60,26 @@ async function processRewards(rewardAmount) {
     target: addressToNode[support.addressTo],
   }))
 
+  // update/validate node types according to edges
+
   // initialState
   const initialState = fromJS({ nodes, edges })
 
-  // select generator
+  // get all generators
   const generators = nodes.filter(item => item.type === NodeType.GENERATOR)
+
+  // validate graph
+  if (nodes.length === 0 || edges.length === 0 || generators.length === 0) {
+    return { rewards: [], generator: null }
+  }
+
+  // select generator
   const selectedGenerator = generators[Math.floor(Math.random() * generators.length)]
 
   const block = Map({ finderId: selectedGenerator.id, subsidy: rewardAmount })
 
   // nodeFee
-  const getNodeFee = createGetNodeFeeFunc(initialState.get('nodes'), 0.1, 0.5)
+  const getNodeFee = createGetNodeFeeFunc(initialState.get('edges'), 0.1, 0.5)
 
   // do reward distribution
   const state = distributeReward({ state: initialState, block, getNodeFee })
@@ -72,7 +90,7 @@ async function processRewards(rewardAmount) {
     reward: item.reward,
   }))
 
-  return {rewards, generator: nodeToAddress[selectedGenerator.id]}
+  return { rewards, generator: nodeToAddress[selectedGenerator.id] }
 }
 
-module.exports = { processRewards }
+module.exports = { processRewards, createGetNodeFeeFunc }
