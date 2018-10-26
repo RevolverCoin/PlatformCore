@@ -180,7 +180,6 @@ class BlockchainServiceBase {
         )
       })
 
-      
       // create block
       const block = new Block(coinbaseTx, rewardTxs, height)
 
@@ -193,11 +192,12 @@ class BlockchainServiceBase {
         block.txs.push(tx)
       })
 
+      
       // process blocks synchronously
       await block.txs.reduce((p, tx) => {
         return p.then(() => this.executeTx(tx))
       }, Promise.resolve())
-
+      
       console.log('# Blockchain Service: new block #' + height)
 
       await this.registerNewBlock(block)
@@ -213,7 +213,7 @@ class BlockchainServiceBase {
   async executeTx(/*Transaction*/ tx) {
     try {
       let stateFrom = null
-
+      
       // check addressFrom only for normal tx
       if (tx.type === TxType.txNormal) {
         // verify from address - address should exist
@@ -223,14 +223,14 @@ class BlockchainServiceBase {
         // check balance addressFrom
         if (!stateFrom.balance || stateFrom.balance < tx.amount) return false
       }
-
+      
       //check amount
       if (tx.amount <= 0) return false
 
       // check to address - if it is not found in state - create
       let stateTo = await this.getState(tx.addressTo)
       if (!stateTo) stateTo = await this.createState(tx.addressTo)
-
+      
       // update only for normal tx
       if (tx.type === TxType.txNormal) {
         // update from state
@@ -239,7 +239,7 @@ class BlockchainServiceBase {
 
       // update to state
       await this.updateState(stateTo.address, stateTo.balance + tx.amount, tx)
-
+      
       return true
     } catch (e) {
       console.log(e)

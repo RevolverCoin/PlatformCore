@@ -85,10 +85,13 @@ async function processRewards(rewardAmount) {
   const state = distributeReward({ state: initialState, block, getNodeFee })
 
   // prepare output
-  const rewards = state.toJS().nodes.map(item => ({
+  const rewardsAll = state.toJS().nodes.map(item => ({
     address: nodeToAddress[item.id],
     reward: item.reward,
   }))
+
+  // remove undefined rewards
+  const rewards = rewardsAll.filter(item=>typeof item.reward !== 'undefined')
 
   return { rewards, generator: nodeToAddress[selectedGenerator.id] }
 }
