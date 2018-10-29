@@ -95,7 +95,7 @@ routes.get('/blockchain/state', async (request, response) => {
 
     const height = await blockchainService.getHeight() 
     await blockchainService.getBlockInfo(height-1)
-    //console.log()
+
 
     const states = await State.aggregate([
       {
@@ -191,9 +191,9 @@ routes.get('/blockchain/:address/balance', async (request, response) => {
       return
     }
 
-    const [result] = await State.find({ address })
+    const result = await State.findOne({ address }, {_id: 0, balance:1, lockedBalance: 1})
 
-    responseData.data = result.balance
+    responseData.data = result
     responseData.error = errors.noError
 
     response.json(responseData)
@@ -392,5 +392,130 @@ routes.post('/blockchain/send', async (request, response) => {
     response.json(responseData)
   }
 })
+
+/**
+ * @api {post} /blockchain/claimgenerator ClaimGenerator
+ * @apiName ClaimGenerator
+ * @apiGroup Blockchain
+ 
+ *
+ * @apiHeader {String} content-type application/json
+ *
+ * @apiParam {String} address
+ *
+ * @apiParamExample {json} Request-Example:
+ *  {
+ *      "address": "17wWUwLaE4ACw5wc77RdutVSeJHQp8ti82"
+ *  }
+ *
+ *
+ * @apiSuccess {String} errorType type of the error, or noError if no error
+ *
+ * @apiSuccessExample {json} Success-Response:
+ *     HTTP/1.1 200 OK
+ *     {
+ *       "error": "noError"
+ *     }
+ *
+ * @apiError noError if call was successful 
+ * @apiError unknownError if error occurred during API call
+ * @apiError invalidInputs bad address or type provided
+ *
+ */
+routes.post('/blockchain/claimgenerator', async (request, response) => {
+  const responseData = {
+    error: errors.unknownError,
+  }
+
+  try {
+
+    const { address } = request.body
+    const requestData = {address}
+
+    // validate
+    const valid = true
+    if (!valid) {
+      responseData.error = errors.invalidInputs
+      response.json(responseData)
+      return
+    }
+
+    await blockchainService.claimGenerator(
+      requestData.address,
+      true
+    )
+
+    responseData.error = errors.noError
+    response.json(responseData)
+  } catch (e) {
+    responseData.message = e.toString()
+    response.json(responseData)
+  }
+})
+
+/**
+ * @api {post} /blockchain/unclaimgenerator UnclaimGenerator
+ * @apiName UnclaimGenerator
+ * @apiGroup Blockchain
+ 
+ *
+ * @apiHeader {String} content-type application/json
+ *
+ * @apiParam {String} address
+ *
+ * @apiParamExample {json} Request-Example:
+ *  {
+ *      "address": "17wWUwLaE4ACw5wc77RdutVSeJHQp8ti82"
+ *  }
+ *
+ *
+ * @apiSuccess {String} errorType type of the error, or noError if no error
+ *
+ * @apiSuccessExample {json} Success-Response:
+ *     HTTP/1.1 200 OK
+ *     {
+ *       "error": "noError"
+ *     }
+ *
+ * @apiError noError if call was successful 
+ * @apiError unknownError if error occurred during API call
+ * @apiError invalidInputs bad address or type provided
+ *
+ */
+routes.post('/blockchain/unclaimgenerator', async (request, response) => {
+  const responseData = {
+    error: errors.unknownError,
+  }
+
+  try {
+
+    const { address } = request.body
+    const requestData = {address}
+
+    // validate
+    const valid = true
+    if (!valid) {
+      responseData.error = errors.invalidInputs
+      response.json(responseData)
+      return
+    }
+
+    await blockchainService.claimGenerator(
+      requestData.address,
+      false
+    )
+
+    responseData.error = errors.noError
+    response.json(responseData)
+  } catch (e) {
+    responseData.message = e.toString()
+    response.json(responseData)
+  }
+})
+
+
+
+
+
 
 module.exports = routes

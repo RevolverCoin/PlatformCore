@@ -6,7 +6,10 @@ const Config = {
     blockReward: 1,
 
     // distribution reward
-    distributeReward: 1
+    distributeReward: 1,
+
+    // 
+    claimGeneratorAmount: 10, 
 }
 
 module.exports = Config;

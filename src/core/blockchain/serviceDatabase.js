@@ -1,13 +1,17 @@
-const mongoose = require('mongoose')
-const BlockSchema = require('../../models/blockchain/block')
-const StateSchema = require('../../models/blockchain/state')
-const ServiceSchema = require('../../models/blockchain/service')
+
+const BlockModel = require('../../models/blockchain/block')
+const StateModel = require('../../models/blockchain/state')
+const ServiceModel = require('../../models/blockchain/service')
+
+const AddressModel = require('../../models/address')
+
 const {
   Transaction: TransactionSchema,
   PendingTransaction: PendingTransactionSchema,
 } = require('../../models/blockchain/transaction')
 
-const { BlockchainServiceBase, State, Transaction } = require('./serviceBase')
+const { BlockchainServiceBase, State } = require('./serviceBase')
+const {Transaction} = require('./transaction')
 
 class BlockchainServiceDatabase extends BlockchainServiceBase {
   constructor() {
@@ -15,16 +19,17 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
   }
 
   async createState(address) {
-    const stateSchema = new StateSchema({
+    const stateSchema = new StateModel({
       address,
       balance: 0,
+      lockedBalance: 0,
       transactions: [],
     })
 
     return stateSchema.save()
   }
 
-  async updateState(address, newBalance, tx) {
+  async updateStateBalance(address, newBalance, tx, locked) {
     const txData = Object.assign({}, tx)
 
     // create tx in db 
@@ -34,29 +39,32 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
     })
 
     // update state and add tx ref
-    await StateSchema.update(
+    let balanceProperty = locked ? 'lockedBalance' : 'balance' 
+    
+    await StateModel.update(
       { address },
-      { balance: newBalance, $push: { transactions: txResult._id } },
+      { [balanceProperty]: newBalance, $push: { transactions: txResult._id } },
     )
 
     return
   }
 
-  async getState(address) {
-    const result = await StateSchema.findOne({ address })
 
-    return new State(address, result.balance, [])
+  async getState(address) {
+    const result = await StateModel.findOne({ address })
+
+    return new State(address, result.balance, result.lockedBalance, [])
   }
   async getStatesCount() {
-    return StateSchema.countDocuments({})
+    return StateModel.countDocuments({})
   }
 
   async getHeight() {
-    return BlockSchema.countDocuments({})
+    return BlockModel.countDocuments({})
   }
 
   async getBlockInfo(height) {
-    const block = await BlockSchema
+    const block = await BlockModel
       .findOne({ height }, {height:1, time:1, _id:0}, {lean:true})
       .populate('transactions', {_id:0, id:1})
     
@@ -65,7 +73,7 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
 
 
   async getServiceAddress() {
-    const serviceInfo = await ServiceSchema.findOne();
+    const serviceInfo = await ServiceModel.findOne();
     if (!serviceInfo)
       return null;
     
@@ -73,7 +81,7 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
   }
   
   async setServiceAddress(address) {
-    await ServiceSchema.create({address});
+    await ServiceModel.create({address});
   }
 
 
@@ -101,7 +109,7 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
       const txs = await TransactionSchema.find({ id: { $in: txIdsInBlock } })
       const objectIds = txs.map(tx => tx._id)
 
-      const blockSchema = new BlockSchema({
+      const blockSchema = new BlockModel({
         height: block.height,
         transactions: objectIds,
       })
@@ -115,6 +123,18 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
     } catch (e) {
       console.log(e)
     }
+  }
+
+  async onClaimGenerator(address, claim) {
+    try {
+
+      const type = claim ? 'Generator' : 'Supporter'
+      await AddressModel.findOneAndUpdate({ address }, { type })
+
+    } catch(e) {
+      console.log(e)
+    }
+
   }
 }
 

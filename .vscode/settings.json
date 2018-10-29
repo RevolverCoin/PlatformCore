@@ -1,3 +1,7 @@
 {
-  "rest-client.rememberCookiesForSubsequentRequests": true
+  "rest-client.rememberCookiesForSubsequentRequests": true,
+  "cSpell.words": [
+    "claimgenerator",
+    "unclaimgenerator"
+  ]
 }

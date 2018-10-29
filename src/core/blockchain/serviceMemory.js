@@ -24,7 +24,7 @@ class BlockchainServiceMemory extends BlockchainServiceBase {
             return null;
 
 
-        state = new State(address, 0, []);
+        state = new State(address, 0, 0, []);
         this.states[address] = state;
         
         return state;
@@ -38,13 +38,17 @@ class BlockchainServiceMemory extends BlockchainServiceBase {
         return this.states[address] 
     }
 
-    async updateState(address, newBalance, tx)
+    async updateStateBalance(address, newBalance, tx, locked)
     {
         const state = await this.getState(address) 
         if (!state)
             return;
 
-        state.balance = newBalance;
+        if (locked)
+            state.locked = newBalance
+        else 
+            state.balance = newBalance;
+        
         state.txs.push(tx); 
     }
 

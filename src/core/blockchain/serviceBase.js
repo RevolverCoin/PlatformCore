@@ -1,50 +1,23 @@
 const bitcoin = require('bitcoinjs-lib')
-const bs58check = require('bs58check')
-const uuidv4 = require('uuid/v4')
 const config = require('./config')
-
+const { Transaction, TxType } = require('./transaction')
 const rewardSystem = require('../reward/reward')
-
-const TxType = {
-  txCoinbase: 'txCoinbase',
-  txNormal: 'txNormal',
-  txReward: 'txReward' 
-}
-
-class Transaction {
-  constructor(addressFrom, addressTo, amount, type, id) {
-    this.addressFrom = addressFrom
-    this.addressTo = addressTo
-    this.amount = amount
-    this.type = type
-
-    if (typeof id !== 'undefined') {
-      this.id = id
-    } else {
-      // extend with random uuid
-      const copy = Object.assign({}, this)
-      copy['uuid'] = uuidv4()
-
-      // calculate id
-      this.id = bs58check.encode(bitcoin.crypto.sha256(new Buffer(JSON.stringify(copy))))
-    }
-  }
-}
 
 class Block {
   constructor(coinbaseTx, rewardTxs, height) {
     this.txs = []
-    this.txs.push   (coinbaseTx)
-    this.txs = this.txs.concat (rewardTxs)
+    this.txs.push(coinbaseTx)
+    this.txs = this.txs.concat(rewardTxs)
 
     this.height = height
   }
 }
 
 class State {
-  constructor(address, balance, txs) {
+  constructor(address, balance, lockedBalance, txs) {
     this.address = address
     this.balance = balance
+    this.lockedBalance = lockedBalance
     this.txs = txs
   }
 }
@@ -57,9 +30,13 @@ class BlockchainServiceBase {
   async createState(address) {
     throw new Error('not implemented')
   }
-  async updateState(address, newBalance, tx) {
+  async updateStateBalance(address, newBalance, tx, locked) {
     throw new Error('not implemented')
   }
+  async updateStateLockedBalance(address, newLockedBalance, tx) {
+    throw new Error('not implemented')
+  }
+
   async getState(address) {
     throw new Error('not implemented')
   }
@@ -83,7 +60,6 @@ class BlockchainServiceBase {
     throw new Error('not implemented')
   }
 
-
   async addPendingTx(tx) {
     throw new Error('not implemented')
   }
@@ -95,21 +71,25 @@ class BlockchainServiceBase {
     throw new Error('not implemented')
   }
 
+  async onClaimGenerator(address, claim)
+  {
+    throw new Error('not implemented')
+  }
+
   async getServiceAddress() {
     return this.coinbaseAddress
   }
-  
+
   async setServiceAddress(address) {
     this.coinbaseAddress = address
   }
-
 
   async init() {
     this.coinbaseAddress = await this.getServiceAddress()
     if (!this.coinbaseAddress) {
       const address = await this.generateNewAddress()
       await this.setServiceAddress(address)
-      this.coinbaseAddress = address;
+      this.coinbaseAddress = address
     }
   }
 
@@ -141,7 +121,6 @@ class BlockchainServiceBase {
   }
 
   async send(addressFrom, addressTo, amount) {
-
     // verify from address - address should exist
     const stateFrom = await this.getState(addressFrom)
     if (!stateFrom) return false
@@ -160,10 +139,41 @@ class BlockchainServiceBase {
     return true
   }
 
+  async claimGenerator(address, claim) {
+    // verify address - address should exist
+    const state = await this.getState(address)
+    if (!state) return false
+
+    // check balance
+    if (claim) {
+      if (!state.balance || state.balance < config.claimGeneratorAmount) return false
+    } else {
+      if (!state.lockedBalance || state.lockedBalance < config.claimGeneratorAmount) return false
+    }
+
+    // todo: check if it is not a generator
+    // ...
+
+    // claim: {addressFrom, addressTo} => {null, address}
+    // unclaim: {addressFrom, addressTo} => {address, null}
+    const addressFrom = claim ? null : address
+    const addressTo = claim ? address : null
+
+    // create pending tx
+    const tx = new Transaction(
+      addressFrom,
+      addressTo,
+      config.claimGeneratorAmount,
+      TxType.txClaimGenerator,
+    )
+
+    await this.addPendingTx(tx)
+
+    return true
+  }
+
   async createNewBlock() {
     try {
-      
-
       if (!this.coinbaseAddress) throw new Error('Service address error!')
 
       // create coinbase tx
@@ -177,16 +187,11 @@ class BlockchainServiceBase {
       const height = await this.getHeight()
 
       // generate rewards
-      const rewardsResult = await rewardSystem.processRewards(config.distributeReward);
+      const rewardsResult = await rewardSystem.processRewards(config.distributeReward)
 
       // create rewardTxs
       const rewardTxs = rewardsResult.rewards.map(item => {
-        return new Transaction(
-          null,
-          item.address,
-          item.reward,
-          TxType.txReward,
-        )
+        return new Transaction(null, item.address, item.reward, TxType.txReward)
       })
 
       // create block
@@ -201,12 +206,11 @@ class BlockchainServiceBase {
         block.txs.push(tx)
       })
 
-      
       // process blocks synchronously
       await block.txs.reduce((p, tx) => {
         return p.then(() => this.executeTx(tx))
       }, Promise.resolve())
-      
+
       console.log('# Blockchain Service: new block #' + height)
 
       await this.registerNewBlock(block)
@@ -222,7 +226,52 @@ class BlockchainServiceBase {
   async executeTx(/*Transaction*/ tx) {
     try {
       let stateFrom = null
+      let stateTo = null
+
+      if (tx.type === TxType.txClaimGenerator) {
+
+        //check amount
+        if (tx.amount !== config.claimGeneratorAmount) return false
+
+        // claim? 
+        if (tx.addressTo !== null) {
+
+          if (tx.addressFrom !== null)
+            return false
+
+          stateTo = await this.getState(tx.addressTo)
+          if (!stateTo) return false
+          
+          // check balance
+          if (!stateTo.balance || stateTo.balance < config.claimGeneratorAmount) return false
+
+          await this.updateStateBalance(stateTo.address, stateTo.balance - config.claimGeneratorAmount, tx, false)
+          await this.updateStateBalance(stateTo.address, stateTo.lockedBalance + config.claimGeneratorAmount, tx, true)
+
+          await this.onClaimGenerator(stateTo.address, true);
+
+        } else {
+
+          if (tx.addressFrom === null)
+            return false
+
+          stateFrom = await this.getState(tx.addressFrom)
+          if (!stateFrom) return false
+  
+          // check balance
+          if (!stateFrom.lockedBalance || stateFrom.lockedBalance < config.claimGeneratorAmount) return false
+
+
+          await this.updateStateBalance(stateFrom.address, stateFrom.lockedBalance - config.claimGeneratorAmount, tx, true)
+          await this.updateStateBalance(stateFrom.address, stateFrom.balance + config.claimGeneratorAmount, tx, false)
+
+          await this.onClaimGenerator(stateFrom.address, false);
+        }
       
+        
+        return true;
+       }
+
       // check addressFrom only for normal tx
       if (tx.type === TxType.txNormal) {
         // verify from address - address should exist
@@ -232,23 +281,23 @@ class BlockchainServiceBase {
         // check balance addressFrom
         if (!stateFrom.balance || stateFrom.balance < tx.amount) return false
       }
-      
+
       //check amount
       if (tx.amount <= 0) return false
 
       // check to address - if it is not found in state - create
-      let stateTo = await this.getState(tx.addressTo)
+      stateTo = await this.getState(tx.addressTo)
       if (!stateTo) stateTo = await this.createState(tx.addressTo)
-      
+
       // update only for normal tx
       if (tx.type === TxType.txNormal) {
         // update from state
-        await this.updateState(stateFrom.address, stateFrom.balance - tx.amount, tx)
+        await this.updateStateBalance(stateFrom.address, stateFrom.balance - tx.amount, tx, false)
       }
 
       // update to state
-      await this.updateState(stateTo.address, stateTo.balance + tx.amount, tx)
-      
+      await this.updateStateBalance(stateTo.address, stateTo.balance + tx.amount, tx, false)
+
       return true
     } catch (e) {
       console.log(e)
@@ -270,4 +319,4 @@ class BlockchainServiceBase {
   }
 }
 
-module.exports = { BlockchainServiceBase, config, TxType, State, Block, Transaction }
+module.exports = { BlockchainServiceBase, config, State, Block }

@@ -5,10 +5,9 @@ const errors = require('../errors')
 const Address = require('../../../models/address')
 const Support = require('../../../models/support')
 
-const blockchainService = require('../../blockchain/service');
+const blockchainService = require('../../blockchain/service')
 
 const routes = express.Router()
-
 
 /**
  * @api {post} /address/new CreateAddress
@@ -34,49 +33,47 @@ const routes = express.Router()
  *          "address" : "17wWUwLaE4ACw5wc77RdutVSeJHQp8ti82"
  *     }
  *
- * @apiError noError if call was successful 
+ * @apiError noError if call was successful
  * @apiError unknownError if error occurred during API call
  * @apiError invalidInputs bad address or type provided
  *
  */
 
 routes.post('/address/new', async (request, response) => {
-    const responseData = {
-        error: errors.unknownError,
+  const responseData = {
+    error: errors.unknownError,
+  }
+
+  try {
+    const { type } = request.body
+    const requestData = { type }
+
+    // validate
+    const valid = true
+    if (!valid) {
+      responseData.error = errors.invalidInputs
+      response.json(responseData)
+      return
     }
 
-    try {
-        const { type } = request.body
-        const requestData = {type}
+    // generate address
+    const newAddress = await blockchainService.generateNewAddress()
 
-        // validate
-        const valid = true
-        if (!valid) {
-            responseData.error = errors.invalidInputs
-            response.json(responseData)
-            return
-        }
+    const data = Object.assign({ address: newAddress }, requestData)
 
-
-        // generate address
-        const newAddress = await blockchainService.generateNewAddress();
-
-        const data = Object.assign({address:newAddress}, requestData);
-
-        // add address
-        const result = await Address.create(data)
-        if (result) {
-            responseData.error = errors.noError
-            responseData.address = newAddress
-        }
-
-        response.json(responseData)
-    } catch (e) {
-        responseData.message = e.toString()
-        response.json(responseData)
+    // add address
+    const result = await Address.create(data)
+    if (result) {
+      responseData.error = errors.noError
+      responseData.address = newAddress
     }
+
+    response.json(responseData)
+  } catch (e) {
+    responseData.message = e.toString()
+    response.json(responseData)
+  }
 })
-
 
 /**
  * @api {post} /address AddAddress
@@ -113,41 +110,41 @@ routes.post('/address/new', async (request, response) => {
  */
 
 routes.post('/address', async (request, response) => {
-    const responseData = {
-        error: errors.unknownError,
+  const responseData = {
+    error: errors.unknownError,
+  }
+
+  try {
+    const { address, type } = request.body
+    const requestData = { address, type }
+
+    // verify if support does not exists
+    const documents = await Address.find({ address: requestData.address })
+    if (documents && documents.length > 0) {
+      responseData.error = errors.addressAlreadyExists
+      response.json(responseData)
+      return
     }
 
-    try {
-        const { address, type } = request.body
-        const requestData = { address, type }
-
-        // verify if support does not exists
-        const documents = await Address.find({ address: requestData.address })
-        if (documents && documents.length > 0) {
-            responseData.error = errors.addressAlreadyExists
-            response.json(responseData)
-            return
-        }
-
-        // validate
-        const valid = true
-        if (!valid) {
-            responseData.error = errors.invalidInputs
-            response.json(responseData)
-            return
-        }
-
-        // add address
-        const result = await Address.create(requestData)
-        if (result) {
-            responseData.error = errors.noError
-        }
-
-        response.json(responseData)
-    } catch (e) {
-        responseData.message = e.toString()
-        response.json(responseData)
+    // validate
+    const valid = true
+    if (!valid) {
+      responseData.error = errors.invalidInputs
+      response.json(responseData)
+      return
     }
+
+    // add address
+    const result = await Address.create(requestData)
+    if (result) {
+      responseData.error = errors.noError
+    }
+
+    response.json(responseData)
+  } catch (e) {
+    responseData.message = e.toString()
+    response.json(responseData)
+  }
 })
 
 /**
@@ -173,7 +170,7 @@ routes.post('/address', async (request, response) => {
  *       "error": "noError"
  *     }
  *
- * @apiError noError if call was successful 
+ * @apiError noError if call was successful
  * @apiError unknownError if error occurred during API call
  * @apiError addressAlreadyExists if address already exists
  * @apiError invalidInputs bad address or type provided
@@ -181,32 +178,32 @@ routes.post('/address', async (request, response) => {
  */
 
 routes.patch('/address/:address', async (request, response) => {
-    const responseData = {
-        error: errors.unknownError,
+  const responseData = {
+    error: errors.unknownError,
+  }
+
+  try {
+    const address = request.params.address
+    const valid = true
+
+    if (!address || !valid) {
+      responseData.error = errors.invalidInputs
+      response.json(responseData)
+      return
+    }
+    const { type } = request.body
+    const requestData = { type }
+
+    const result = await Address.findOneAndUpdate({ address }, { type: requestData.type })
+    if (result) {
+      responseData.error = errors.noError
     }
 
-    try {
-        const address = request.params.address
-        const valid = true
-
-        if (!address || !valid) {
-            responseData.error = errors.invalidInputs
-            response.json(responseData)
-            return
-        }
-        const { type } = request.body
-        const requestData = {type}
-
-        const result = await Address.findOneAndUpdate({ address }, { type: requestData.type })
-        if (result) {
-            responseData.error = errors.noError
-        }
-
-        response.json(responseData)
-    } catch (e) {
-        responseData.message = e.toString()
-        response.json(responseData)
-    }
+    response.json(responseData)
+  } catch (e) {
+    responseData.message = e.toString()
+    response.json(responseData)
+  }
 })
 
 /**
@@ -225,33 +222,38 @@ routes.patch('/address/:address', async (request, response) => {
  *       "error": "noError"
  *     }
  *
- * @apiError noError if call was successful 
+ * @apiError noError if call was successful
  * @apiError unknownError if error occurred during API call
  * @apiError addressNotFound specified address was not found
  *
  */
 routes.get('/address/:address', async (request, response) => {
-    const responseData = {
-        error: errors.unknownError,
-    }
+  const responseData = {
+    error: errors.unknownError,
+  }
+
+  try {
     const address = request.params.address
 
-    if (address) {
-        Address.find({
-            address,
-        }).exec((error, documents) => {
-            if (documents && documents.length > 0) {
-                responseData.data = documents[0]
-                responseData.error = errors.noError
-            } else {
-                responseData.error = errors.addressNotFound
-            }
-            response.json(responseData)
-        })
-    } else {
-        response.json(responseData)
+    // validate
+    if (!address) {
+      responseData.error = errors.invalidInputs
+      response.json(responseData)
+      return
     }
+
+    const result = await Address.findOne({ address }, { _id: 0, type: 1 })
+
+    responseData.error = errors.noError
+    responseData.data = result
+    response.json(responseData)
+  } catch (e) {
+    responseData.message = e.toString()
+    response.json(responseData)
+  }
+
 })
+
 /**
  * @api {get} /address/supporting/:address GetSupports
  * @apiName GetSupports
@@ -274,43 +276,41 @@ routes.get('/address/:address', async (request, response) => {
  *          }
  *     }
  *
- * @apiError noError if call was successful 
+ * @apiError noError if call was successful
  * @apiError unknownError if error occurred during API call
  * @apiError invalidInputs bad address provided
  *
  */
 routes.get('/address/supporting/:address', async (request, response) => {
+  const responseData = {
+    error: errors.unknownError,
+    data: {},
+  }
 
-    const responseData = {
-        error: errors.unknownError,
-        data: {}
+  try {
+    const address = request.params.address
+
+    // validate
+    if (!address) {
+      responseData.error = errors.invalidInputs
+      response.json(responseData)
+      return
     }
 
-    try {
-        const address = request.params.address
+    const result = await Support.find({ addressFrom: address })
+    const filteredResult = result.map(obj => {
+      return {
+        addressTo: obj.addressTo,
+      }
+    })
 
-        // validate
-        if (!address) {
-            responseData.error = errors.invalidInputs
-            response.json(responseData)
-            return
-        }
-
-        const result = await Support.find({ addressFrom: address })
-        const filteredResult = result.map(obj => {
-            return {
-                addressTo : obj.addressTo
-            } 
-        })
-
-        responseData.error  = errors.noError
-        responseData.data   = {supports: filteredResult}
-        response.json(responseData)
-    } catch (e) {
-        responseData.message = e.toString()
-        response.json(responseData)
-    }
-
+    responseData.error = errors.noError
+    responseData.data = { supports: filteredResult }
+    response.json(responseData)
+  } catch (e) {
+    responseData.message = e.toString()
+    response.json(responseData)
+  }
 })
 
 /**
@@ -335,42 +335,41 @@ routes.get('/address/supporting/:address', async (request, response) => {
  *          }
  *     }
  *
- * @apiError noError if call was successful 
+ * @apiError noError if call was successful
  * @apiError unknownError if error occurred during API call
  * @apiError invalidInputs bad address provided
  *
  */
 routes.get('/address/supported/:address', async (request, response) => {
-    const responseData = {
-        error: errors.unknownError,
-        data: {}
+  const responseData = {
+    error: errors.unknownError,
+    data: {},
+  }
+
+  try {
+    const address = request.params.address
+
+    // validate
+    if (!address) {
+      responseData.error = errors.invalidInputs
+      response.json(responseData)
+      return
     }
 
-    try {
-        const address = request.params.address
+    const result = await Support.find({ addressTo: address })
+    const filteredResult = result.map(obj => {
+      return {
+        addressFrom: obj.addressFrom,
+      }
+    })
 
-        // validate
-        if (!address) {
-            responseData.error = errors.invalidInputs
-            response.json(responseData)
-            return
-        }
-
-        const result = await Support.find({ addressTo: address })
-        const filteredResult = result.map(obj => {
-            return {
-                addressFrom : obj.addressFrom
-            } 
-        })
-
-        responseData.error  = errors.noError
-        responseData.data   = {supports: filteredResult}
-        response.json(responseData)
-    } catch (e) {
-        responseData.message = e.toString()
-        response.json(responseData)
-    }
-
+    responseData.error = errors.noError
+    responseData.data = { supports: filteredResult }
+    response.json(responseData)
+  } catch (e) {
+    responseData.message = e.toString()
+    response.json(responseData)
+  }
 })
 
 /**
@@ -392,35 +391,32 @@ routes.get('/address/supported/:address', async (request, response) => {
  *          }
  *     }
  *
- * @apiError noError if call was successful 
+ * @apiError noError if call was successful
  * @apiError unknownError if error occurred during API call
  *
  */
 routes.get('/addresses', async (request, response) => {
-    const responseData = {
-        error: errors.unknownError,
-        data: {}
-    }
+  const responseData = {
+    error: errors.unknownError,
+    data: {},
+  }
 
-    try {
-        const result = await Address.find()
-        const preparedResult = result.map(obj => {
-            return {
-                address: obj._doc.address,
-                type: obj._doc.type
-            } 
-        })
+  try {
+    const result = await Address.find()
+    const preparedResult = result.map(obj => {
+      return {
+        address: obj._doc.address,
+        type: obj._doc.type,
+      }
+    })
 
-        responseData.error  = errors.noError
-        responseData.data   = preparedResult
-        response.json(responseData)
-    } catch (e) {
-        responseData.message = e.toString()
-        response.json(responseData)
-    }
-
+    responseData.error = errors.noError
+    responseData.data = preparedResult
+    response.json(responseData)
+  } catch (e) {
+    responseData.message = e.toString()
+    response.json(responseData)
+  }
 })
-
-
 
 module.exports = routes
