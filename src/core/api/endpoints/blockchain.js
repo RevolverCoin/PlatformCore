@@ -93,6 +93,10 @@ routes.get('/blockchain/state', async (request, response) => {
 
   try {
 
+    const height = await blockchainService.getHeight() 
+    await blockchainService.getBlockInfo(height-1)
+    //console.log()
+
     const states = await State.aggregate([
       {
         $lookup: {
@@ -242,7 +246,11 @@ routes.get('/blockchain/:address/transactions', async (request, response) => {
     }
 
     const result = await Transaction.find(
-      { $or: [{ addressFrom: address }, { addressTo: address }] },
+      { $and: [
+        { $or: [{ addressFrom: address }, { addressTo: address }] },
+        { type: {$ne: 'txReward'}}
+      ]},
+
       null,
       { limit: 100, sort: { blockHeight: -1 } },
     )
@@ -256,6 +264,69 @@ routes.get('/blockchain/:address/transactions', async (request, response) => {
     response.json(responseData)
   }
 })
+
+/**
+ * @api {get} /blockchain/:address/rewardtransactions GetBlockchainRewardTransactions
+ * @apiName GetBlockchainRewardTransactions
+ * @apiGroup Blockchain
+ *
+ * @apiHeader {String} content-type application/json
+ *
+ * @apiParam (url){String} address User address
+ *
+ * @apiSuccess {String} errorType type of the error, or noError if no error
+ * @apiSuccess {String} data resulting data, containing info
+ *
+ * @apiSuccessExample {json} Success-Response:
+ *     HTTP/1.1 200 OK
+ *     {
+ *          "error": "noError",
+ *          "data": [
+ *            {}
+ *          ]
+ *     }
+ *
+ * @apiError noError if call was successful
+ * @apiError unknownError if error occurred during API call
+ * @apiError invalidInputs bad address provided
+ *
+ */
+routes.get('/blockchain/:address/rewardtransactions', async (request, response) => {
+  const responseData = {
+    error: errors.unknownError,
+  }
+
+  try {
+    const address = request.params.address
+
+    // validate
+    const valid = true
+    if (!valid) {
+      responseData.error = errors.invalidInputs
+      response.json(responseData)
+      return
+    }
+
+    const result = await Transaction.find(
+      { $and: [
+        { $or: [{ addressFrom: address }, { addressTo: address }] },
+        { type: 'txReward'}
+      ]},
+      null,
+      { limit: 100, sort: { blockHeight: -1 } },
+    )
+
+    responseData.data = result
+    responseData.error = errors.noError
+
+    response.json(responseData)
+  } catch (e) {
+    responseData.message = e.toString()
+    response.json(responseData)
+  }
+})
+
+
 
 /**
  * @api {post} /blockchain/send Send

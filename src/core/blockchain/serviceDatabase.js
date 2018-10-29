@@ -55,6 +55,15 @@ class BlockchainServiceDatabase extends BlockchainServiceBase {
     return BlockSchema.countDocuments({})
   }
 
+  async getBlockInfo(height) {
+    const block = await BlockSchema
+      .findOne({ height }, {height:1, time:1, _id:0}, {lean:true})
+      .populate('transactions', {_id:0, id:1})
+    
+      return block;
+  }
+
+
   async getServiceAddress() {
     const serviceInfo = await ServiceSchema.findOne();
     if (!serviceInfo)

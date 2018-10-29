@@ -75,6 +75,15 @@ class BlockchainServiceBase {
     throw new Error('not implemented')
   }
 
+  /**
+   * get extended block info
+   * return {height, time, transactions: [{id, type}]}
+   */
+  async getBlockInfo(height) {
+    throw new Error('not implemented')
+  }
+
+
   async addPendingTx(tx) {
     throw new Error('not implemented')
   }

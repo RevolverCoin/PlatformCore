@@ -2,6 +2,7 @@
 const addressRoutes = require('../api/endpoints/address')
 const supportRoutes = require('../api/endpoints/support')
 const blockchainRoutes = require('../api/endpoints/blockchain')
+const serviceRoutes = require('../api/endpoints/service')
 
 const {
   createSuccessResponse
@@ -16,4 +17,5 @@ module.exports = function (app) {
     .use(addressRoutes)
     .use(supportRoutes)
     .use(blockchainRoutes)
+    .use(serviceRoutes)
 }
