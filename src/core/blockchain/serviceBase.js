@@ -191,7 +191,7 @@ class BlockchainServiceBase {
 
       // create rewardTxs
       const rewardTxs = rewardsResult.rewards.map(item => {
-        return new Transaction(null, item.address, item.reward, TxType.txReward)
+        return new Transaction(rewardsResult.generator, item.address, item.reward, TxType.txReward)
       })
 
       // create block

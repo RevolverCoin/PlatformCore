@@ -309,7 +309,7 @@ routes.get('/blockchain/:address/rewardtransactions', async (request, response) 
 
     const result = await Transaction.find(
       { $and: [
-        { $or: [{ addressFrom: address }, { addressTo: address }] },
+        { addressTo: address } ,
         { type: 'txReward'}
       ]},
       null,
