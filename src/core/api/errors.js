@@ -1,6 +1,8 @@
 module.exports = {
     noError: 'noError',
     unknownError: 'unknownError',
+    
+    errorExecutingMethod: 'errorExecutingMethod',
     addressAlreadyExists: 'addressAlreadyExists',
     invalidInputs: 'invalidInputs',
     addressNotFound: 'addressNotFound',
@@ -9,4 +11,5 @@ module.exports = {
     supportNotFound:'supportNotFound',
     addressFromNotFound: 'addressFromNotFound',
     addressToNotFound: 'addressToNotFound',
+
 }

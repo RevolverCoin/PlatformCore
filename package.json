@@ -7,7 +7,8 @@
     "start": "nodemon src/index.js",
     "test": "mocha --timeout 15000",
     "testdb": "mocha ./test/serviceDatabase.test.js --timeout 15000",
-    "apidoc": "apidoc -i src/ -o doc/generated -t doc/template"
+    "apidoc": "apidoc -i src/ -o doc/generated -t doc/template",
+    "forever": "forever --uid PlatformCore start src/index.js"
   },
   "apidoc": {
     "name": "PlatformCore",

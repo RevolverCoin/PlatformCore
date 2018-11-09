@@ -56,6 +56,7 @@ routes.get('/service/info', async (request, response) => {
         responseData.data = {
             blockHeight: info.height,
             lastBlockTime: info.time,
+            currentTime: new Date().toString(),
             addresses: addressCount,
             supports: supportCount,
             sing: singUnique.length,

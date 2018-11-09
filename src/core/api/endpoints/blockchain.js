@@ -359,6 +359,7 @@ routes.get('/blockchain/:address/rewardtransactions', async (request, response) 
  * @apiError noError if call was successful 
  * @apiError unknownError if error occurred during API call
  * @apiError invalidInputs bad address or type provided
+ * @apiError errorExecutingMethod error occurred while internal method call 
  *
  */
 routes.post('/blockchain/send', async (request, response) => {
@@ -372,20 +373,35 @@ routes.post('/blockchain/send', async (request, response) => {
     const requestData = {addressFrom, addressTo, amount}
 
     // validate
-    const valid = true
+    let valid = true
+    
+    // check types
+    if ((typeof addressFrom  !== 'string') || (typeof addressTo !== 'string'))
+      valid = false;
+    else if (addressFrom.trim() === '' || addressTo.trim() === '')
+      valid = false
+    else if (addressFrom.trim() === addressTo.trim())
+      valid = false;
+    else if (amount <= 0)
+      valid = false;
+
     if (!valid) {
       responseData.error = errors.invalidInputs
       response.json(responseData)
       return
     }
 
-    await blockchainService.send(
+    const result = await blockchainService.send(
       requestData.addressFrom,
       requestData.addressTo,
       parseInt(requestData.amount),
     )
+    
+    if (!result)
+      responseData.error = errors.errorExecutingMethod
+    else 
+      responseData.error = errors.noError
 
-    responseData.error = errors.noError
     response.json(responseData)
   } catch (e) {
     responseData.message = e.toString()
@@ -440,12 +456,15 @@ routes.post('/blockchain/claimgenerator', async (request, response) => {
       return
     }
 
-    await blockchainService.claimGenerator(
+    const result = await blockchainService.claimGenerator(
       requestData.address,
       true
     )
+    if (!result)
+      responseData.error = errors.errorExecutingMethod
+    else 
+      responseData.error = errors.noError
 
-    responseData.error = errors.noError
     response.json(responseData)
   } catch (e) {
     responseData.message = e.toString()
@@ -500,12 +519,16 @@ routes.post('/blockchain/unclaimgenerator', async (request, response) => {
       return
     }
 
-    await blockchainService.claimGenerator(
+    const result = await blockchainService.claimGenerator(
       requestData.address,
       false
     )
 
-    responseData.error = errors.noError
+    if (!result)
+      responseData.error = errors.errorExecutingMethod
+    else 
+      responseData.error = errors.noError
+
     response.json(responseData)
   } catch (e) {
     responseData.message = e.toString()

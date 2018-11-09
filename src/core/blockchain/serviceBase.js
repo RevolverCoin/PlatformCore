@@ -140,6 +140,7 @@ class BlockchainServiceBase {
   }
 
   async claimGenerator(address, claim) {
+
     // verify address - address should exist
     const state = await this.getState(address)
     if (!state) return false
@@ -150,6 +151,17 @@ class BlockchainServiceBase {
     } else {
       if (!state.lockedBalance || state.lockedBalance < config.claimGeneratorAmount) return false
     }
+
+    // check pending tx
+    // only one claim can be in mem pool
+    const pending = await this.getPendingTxs()
+
+    const found = pending.find(tx => {
+      return (tx.type === TxType.txClaimGenerator) && (tx.addressFrom === address || tx.addressTo === address) 
+    })
+
+    if (typeof found !== 'undefined') 
+      return false;
 
     // todo: check if it is not a generator
     // ...
@@ -260,7 +272,6 @@ class BlockchainServiceBase {
   
           // check balance
           if (!stateFrom.lockedBalance || stateFrom.lockedBalance < config.claimGeneratorAmount) return false
-
 
           await this.updateStateBalance(stateFrom.address, stateFrom.lockedBalance - config.claimGeneratorAmount, tx, true)
           await this.updateStateBalance(stateFrom.address, stateFrom.balance + config.claimGeneratorAmount, tx, false)
