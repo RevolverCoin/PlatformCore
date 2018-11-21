@@ -4,6 +4,8 @@ const mongoose = require('mongoose')
 const Support = require('../../../models/support')
 const Address = require('../../../models/address')
 
+const blockchainService = require('../../blockchain/service')
+
 const errors = require('../errors')
 
 const routes = express.Router()
@@ -80,7 +82,12 @@ routes.post('/support', async (request, response) => {
     }
 
     // add support
-    const result = await Support.create(requestData)
+    const result = await blockchainService.addSupport(
+      requestData.addressFrom,
+      requestData.addressTo,
+      true
+    )
+
     if (result) {
       responseData.error = errors.noError
     }
@@ -120,6 +127,9 @@ routes.post('/support', async (request, response) => {
  * @apiError noError if call was successful
  * @apiError unknownError if error occurred during API call
  * @apiError supportNotFound if support was not found
+ * @apiError addressFromNotFound specified address was not found
+ * @apiError addressToNotFound specified address was not found
+ * 
  *
  */
 routes.delete('/support', async (request, response) => {
@@ -131,13 +141,48 @@ routes.delete('/support', async (request, response) => {
     const { addressFrom, addressTo } = request.body
     const requestData = { addressFrom, addressTo }
 
-    // verify if support does not exists
-    let documents = await Support.findOneAndRemove(requestData)
-
-    if (!documents || documents.length <= 0) {
+    // verify if support exists
+    let documents = await Support.find(requestData)
+    if (!documents || documents.length === 0) {
       responseData.error = errors.supportNotFound
-    } else {
+      response.json(responseData)
+      return
+    }
+
+    // check if addressFrom exists
+    documents = await Address.find({ address: requestData.addressFrom })
+    if (!documents || documents.length <= 0) {
+      responseData.error = errors.addressFromNotFound
+      response.json(responseData)
+      return
+    }
+    // check if addressTo is exists
+    const addressToDocument = await Address.find({ address: requestData.addressTo })
+    if (!addressToDocument || addressToDocument.length <= 0) {
+      responseData.error = errors.addressToNotFound
+      response.json(responseData)
+      return
+    }
+
+    // validate address types and addresses
+    const valid = true
+    if (!valid) {
+      responseData.error = errors.invalidInputs
+      response.json(responseData)
+      return
+    }
+
+    // remove support
+    const result = await blockchainService.addSupport(
+      requestData.addressFrom,
+      requestData.addressTo,
+      false
+    )
+
+    if (result) {
       responseData.error = errors.noError
+    } else {
+      responseData.error = errors.unknownError
     }
     response.json(responseData)
   } catch (e) {

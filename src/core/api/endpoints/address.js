@@ -1,5 +1,6 @@
 const express = require('express')
 
+const config = require('../../blockchain/config')
 const errors = require('../errors')
 
 const Address = require('../../../models/address')
@@ -21,6 +22,7 @@ const routes = express.Router()
  * @apiParamExample {json} Request-Example:
  *  {
  *      "type": "Author",
+ *      "internal": false
  *  }
  *
  *
@@ -45,8 +47,8 @@ routes.post('/address/new', async (request, response) => {
   }
 
   try {
-    const { type } = request.body
-    const requestData = { type }
+    const { type, internal } = request.body
+    const requestData = { type, internal }
 
     // validate
     const valid = true
@@ -59,17 +61,28 @@ routes.post('/address/new', async (request, response) => {
     // generate address
     const newAddress = await blockchainService.generateNewAddress()
 
-    const data = Object.assign({ address: newAddress }, requestData)
+    const data = Object.assign({ address: newAddress }, {type: requestData.type})
 
     // add address
     const result = await Address.create(data)
     if (result) {
+      
+      // if a common user, send bounty
+      if (!requestData.internal) {
+        const serviceAddress = await blockchainService.getServiceAddress()
+        const sendResult = await blockchainService.send(serviceAddress, newAddress, config.addressStartBounty)
+        if (!sendResult) {
+          console.log(`Cannot send a start bounty from ${serviceAddress} to ${newAddress}`)
+        }
+      }
+
       responseData.error = errors.noError
       responseData.address = newAddress
     }
 
     response.json(responseData)
   } catch (e) {
+    console.log(e)
     responseData.message = e.toString()
     response.json(responseData)
   }
@@ -113,38 +126,8 @@ routes.post('/address', async (request, response) => {
   const responseData = {
     error: errors.unknownError,
   }
-
-  try {
-    const { address, type } = request.body
-    const requestData = { address, type }
-
-    // verify if support does not exists
-    const documents = await Address.find({ address: requestData.address })
-    if (documents && documents.length > 0) {
-      responseData.error = errors.addressAlreadyExists
-      response.json(responseData)
-      return
-    }
-
-    // validate
-    const valid = true
-    if (!valid) {
-      responseData.error = errors.invalidInputs
-      response.json(responseData)
-      return
-    }
-
-    // add address
-    const result = await Address.create(requestData)
-    if (result) {
-      responseData.error = errors.noError
-    }
-
-    response.json(responseData)
-  } catch (e) {
-    responseData.message = e.toString()
-    response.json(responseData)
-  }
+  
+  response.json(responseData)
 })
 
 /**

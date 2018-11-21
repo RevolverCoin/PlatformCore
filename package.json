@@ -23,6 +23,7 @@
     "bcrypt-nodejs": "0.0.3",
     "bitcoinjs-lib": "^4.0.1",
     "body-parser": "^1.18.3",
+    "bottleneck": "^2.13.0",
     "bs58check": "^2.1.2",
     "connect-mongo": "^2.0.1",
     "cookie-parser": "^1.4.3",

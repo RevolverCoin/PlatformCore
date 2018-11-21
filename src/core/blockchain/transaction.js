@@ -6,7 +6,8 @@ const TxType = {
   txCoinbase: 'txCoinbase',
   txNormal: 'txNormal',
   txReward: 'txReward',
-  txClaimGenerator: 'txClaimGenerator'
+  txClaimGenerator: 'txClaimGenerator',
+  txSupport: 'txSupport',
 }
 
 class Transaction {
