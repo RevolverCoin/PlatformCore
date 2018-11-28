@@ -3,6 +3,8 @@ const addressRoutes = require('../api/endpoints/address')
 const supportRoutes = require('../api/endpoints/support')
 const blockchainRoutes = require('../api/endpoints/blockchain')
 const serviceRoutes = require('../api/endpoints/service')
+const rewardRoutes = require('../api/endpoints/reward')
+
 
 const {
   createSuccessResponse
@@ -18,4 +20,5 @@ module.exports = function (app) {
     .use(supportRoutes)
     .use(blockchainRoutes)
     .use(serviceRoutes)
+    .use(rewardRoutes)
 }

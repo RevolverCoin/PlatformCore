@@ -6,6 +6,7 @@ const { createAdjacencyMatrix, isSet } = require('reward-core/utils')
 
 const Address = require('../../models/address')
 const Support = require('../../models/support')
+const Reward = require('../../models/reward')
 
 function isValidType(type) {
   return type === 'Generator' || type === 'Author' || type === 'Supporter'
@@ -25,6 +26,32 @@ function createGetNodeFeeFunc(edges, supporterFee, authorFee) {
   return (nodeId, parentId) => (isSet(matrix, parentId, nodeId) ? authorFee : supporterFee)
 }
 
+/**
+ * calcRewardTotal
+ * @param {*} rewardPerParent { '4': 0.9, '4_241': 0.225, '4_470': 0.225 }
+ *  
+ * @param {*} nodeToAddress 
+ */
+async function calcRewardTotal(rewardPerParent, nodeToAddress)
+{
+  const keys = Object.keys(rewardPerParent);
+  for (let i=0; i<keys.length; i++) {
+    const key = keys[i]
+    const value = rewardPerParent[key]
+
+    const nodes = key.split('_')
+    
+    const address = nodeToAddress[parseInt(nodes[0])]
+    const linkAddress = nodes.length > 1 ? nodeToAddress[parseInt(nodes[1])] : null
+    
+    await Reward.findOneAndUpdate({address, linkAddress}, {$inc: {rewardTotal: value}}, {upsert: true})
+  }
+}
+
+/**
+ * processRewards
+ * @param {*} rewardAmount 
+ */
 async function processRewards(rewardAmount) {
   // prepare nodes (addresses)
   const addresses = await Address.aggregate([
@@ -83,6 +110,9 @@ async function processRewards(rewardAmount) {
 
   // do reward distribution
   const state = distributeReward({ state: initialState, block, getNodeFee })
+
+  const rewardPerParent = state.get('rewardPerParent').toJS()
+  calcRewardTotal(rewardPerParent, nodeToAddress)
 
   // prepare output
   const rewardsAll = state.toJS().nodes.map(item => ({
